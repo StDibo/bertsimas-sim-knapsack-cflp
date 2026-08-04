@@ -26,10 +26,9 @@ the Gurobi Python API.
 ## Reproducibility
 
 Each instance is identified by:
-
 - number of items `n`;
 - maximum relative deviation `delta`;
-- capacity ratio `rcp`;
+- capacity ratio `capacity_ratio`;
 - pseudorandom seed.
 
 The uncertainty budget `gamma_rel` does not affect instance generation.
