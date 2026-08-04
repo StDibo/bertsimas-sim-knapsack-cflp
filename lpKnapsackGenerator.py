@@ -1,4 +1,4 @@
-"""Generazione riproducibile e modelli per il Knapsack 0-1 robusto."""
+"""Reproducible instance generation and models for the robust 0-1 Knapsack."""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,7 +10,7 @@ from gurobipy import GRB
 
 @dataclass(frozen=True)
 class KnapsackInstance:
-    """Dati immutabili di una singola istanza Knapsack."""
+    """Immutable data describing one Knapsack instance."""
 
     n: int
     profits: tuple[int, ...]
@@ -19,17 +19,20 @@ class KnapsackInstance:
     capacity: float
     seed: int
     delta: float
-    rcp: float
+    capacity_ratio: float
 
 
-def generate_instance(n: int, delta: float, rcp: float, seed: int) -> KnapsackInstance:
-    """Genera un'istanza riproducibile, indipendente dal budget Gamma."""
+def generate_instance(
+    n: int, delta: float, capacity_ratio: float, seed: int
+) -> KnapsackInstance:
+    """Generate a reproducible instance independently of the Gamma budget."""
+    
     if n <= 0:
-        raise ValueError("n deve essere maggiore di zero")
+        raise ValueError("n must be greater than zero")
     if delta < 0:
-        raise ValueError("delta deve essere non negativo")
-    if not 0 < rcp <= 1:
-        raise ValueError("rcp deve appartenere all'intervallo (0, 1]")
+        raise ValueError("delta must be non-negative")
+    if not 0 < capacity_ratio <= 1:
+        raise ValueError("capacity_ratio must be in the interval (0, 1]")
 
     rng = random.Random(seed)
     nominal_weights = tuple(rng.randint(20, 29) for _ in range(n))
@@ -37,7 +40,7 @@ def generate_instance(n: int, delta: float, rcp: float, seed: int) -> KnapsackIn
     maximum_deviations = tuple(
         round(weight * delta, 2) for weight in nominal_weights
     )
-    capacity = round(rcp * sum(nominal_weights), 2)
+    capacity = round(capacity_ratio * sum(nominal_weights), 2)
 
     return KnapsackInstance(
         n=n,
@@ -47,12 +50,13 @@ def generate_instance(n: int, delta: float, rcp: float, seed: int) -> KnapsackIn
         capacity=capacity,
         seed=seed,
         delta=delta,
-        rcp=rcp,
+        capacity_ratio=capacity_ratio,
     )
 
 
 def build_nominal_model(instance: KnapsackInstance) -> gp.Model:
-    """Costruisce il modello nominale senza variabili robuste ausiliarie."""
+    """Build the nominal model without robust auxiliary variables."""
+
     model = gp.Model("knapsack_nominal")
     x = model.addVars(instance.n, vtype=GRB.BINARY, name="x")
     model.setObjective(
@@ -73,9 +77,10 @@ def build_nominal_model(instance: KnapsackInstance) -> gp.Model:
 def build_robust_model(
     instance: KnapsackInstance, gamma_rel: float
 ) -> gp.Model:
-    """Costruisce la controparte robusta di Bertsimas e Sim."""
+    """Build the Bertsimas-Sim robust counterpart."""
+
     if not 0 <= gamma_rel <= 1:
-        raise ValueError("gamma_rel deve appartenere all'intervallo [0, 1]")
+        raise ValueError("gamma_rel must be in the interval [0, 1]")
 
     gamma = gamma_rel * instance.n
     model = gp.Model("knapsack_robust")
@@ -108,7 +113,8 @@ def build_robust_model(
 
 
 def write_nominal_lp(instance: KnapsackInstance, output_path: str | Path) -> Path:
-    """Esporta un singolo modello nominale in formato LP."""
+    """Export one nominal model in LP format."""
+
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     build_nominal_model(instance).write(str(path))
@@ -118,23 +124,8 @@ def write_nominal_lp(instance: KnapsackInstance, output_path: str | Path) -> Pat
 def write_robust_lp(
     instance: KnapsackInstance, gamma_rel: float, output_path: str | Path
 ) -> Path:
-    """Esporta un singolo modello robusto in formato LP."""
+    """Export one robust model in LP format."""
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     build_robust_model(instance, gamma_rel).write(str(path))
     return path
-
-
-def lpGenerator(
-    n: int,
-    gammaRel: float,
-    delta: float,
-    rcp: float,
-    seed: int | None = None,
-    output_path: str | Path = "modelloRobusto.lp",
-) -> Path:
-    """Wrapper compatibile che genera ed esporta direttamente un LP robusto."""
-    if seed is None:
-        seed = 0
-    instance = generate_instance(n=n, delta=delta, rcp=rcp, seed=seed)
-    return write_robust_lp(instance, gammaRel, output_path)
