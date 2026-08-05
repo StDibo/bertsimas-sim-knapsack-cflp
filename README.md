@@ -9,11 +9,11 @@ the Gurobi Python API.
 
 ## Main modules
 
-- `lpKnapsackGenerator.py`: instance generation, nominal model,
+- `knapsack_generator.py`: instance generation, nominal model,
   robust model and LP export.
-- `lpKnapsackExperiment.py`: systematic execution of nominal and
+- `knapsack_experiment.py`: systematic execution of nominal and
   robust experiments.
-- `lpKnapsackAnalysis.py`: validation and analysis of experimental results.
+- `knapsack_analysis.py`: validation and analysis of experimental results.
 
 ## Requirements
 
