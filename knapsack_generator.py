@@ -35,7 +35,7 @@ def generate_instance(
         raise ValueError("capacity_ratio must be in the interval (0, 1]")
 
     rng = random.Random(seed)
-    nominal_weights = tuple(rng.randint(20, 29) for _ in range(n))
+    nominal_weights = tuple(rng.randint(20, 29) for _ in range(n)) # to modify later on
     profits = tuple(rng.randint(16, 77) for _ in range(n))
     maximum_deviations = tuple(
         round(weight * delta, 2) for weight in nominal_weights

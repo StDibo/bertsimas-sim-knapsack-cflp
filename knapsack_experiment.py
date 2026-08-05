@@ -36,18 +36,14 @@ FIELDNAMES = [
     "capacity_ratio",
     "seed",
     "gamma_rel",
-    "gamma",
     "objective_value",
     "runtime_sec",
     "status",
     "selected_items",
-    "selected_count",
     "best_bound",
     "mip_gap",
-    "node_count",
     "num_variables",
     "num_constraints",
-    "solution_count",
 ]
 
 
@@ -89,8 +85,7 @@ def solve_model(
     model.Params.MIPGap = MIP_GAP
     model.optimize()
 
-    solution_count = int(model.SolCount)
-    has_solution = solution_count > 0
+    has_solution = model.SolCount > 0
     selected = []
     if has_solution:
         selected = [
@@ -105,18 +100,14 @@ def solve_model(
         "capacity_ratio": instance.capacity_ratio,
         "seed": instance.seed,
         "gamma_rel": gamma_rel,
-        "gamma": gamma_rel * instance.n,
         "objective_value": model.ObjVal if has_solution else "",
         "runtime_sec": model.Runtime,
         "status": status_name(model.Status),
         "selected_items": ";".join(str(j) for j in selected),
-        "selected_count": len(selected) if has_solution else "",
         "best_bound": model.ObjBound,
         "mip_gap": model.MIPGap if has_solution else "",
-        "node_count": model.NodeCount,
         "num_variables": model.NumVars,
         "num_constraints": model.NumConstrs,
-        "solution_count": solution_count,
     }
 
 
