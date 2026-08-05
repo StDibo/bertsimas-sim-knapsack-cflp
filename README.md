@@ -7,7 +7,7 @@ The project provides reproducible generation of 0-1 Knapsack instances
 and the construction of nominal and Bertsimas-Sim robust models using
 the Gurobi Python API.
 
-## Main modules
+## Modules
 
 - `knapsack_generator.py`: instance generation, nominal model,
   robust model and LP export.
