@@ -1,35 +1,47 @@
-# Robust Knapsack — Bertsimas and Sim
+# Reproducible Bertsimas-Sim Models for Knapsack and CFLP
 
-This repository contains the software developed for a Bachelor's thesis
-in Computer Science at the University of Florence.
+This repository contains the software developed for a Bachelor's thesis in
+Computer Science at the University of Florence.
 
-The project provides reproducible generation of 0-1 Knapsack instances
-and the construction of nominal and Bertsimas-Sim robust models using
-the Gurobi Python API.
+The project applies the Bertsimas-Sim budgeted uncertainty framework to two
+classical combinatorial optimization problems:
 
-## Modules
+- the 0-1 Knapsack Problem;
+- the single-source Capacitated Facility Location Problem (CFLP).
 
-- `knapsack_generator.py`: instance generation, nominal model,
-  robust model and LP export.
-- `knapsack_experiment.py`: systematic execution of nominal and
-  robust experiments.
-- `knapsack_analysis.py`: validation and analysis of experimental results.
+It provides reproducible instance generation, construction of nominal and
+robust models using the Gurobi Python API, systematic experimental campaigns,
+and analysis of the resulting data.
+
+## Repository Structure
+
+### Knapsack
+
+- `knapsack/knapsack_generator.py`: reproducible instance generation,
+  construction of nominal and robust models, and LP export.
+- `knapsack/knapsack_experiment.py`: execution of the nominal and robust
+  experimental campaign.
+- `knapsack/knapsack_analysis.py`: validation, aggregation, and visualization
+  of the experimental results.
+
+### Capacitated Facility Location
+
+- `capacitated_facility_location/cfl_generator.py`: reproducible T4-type
+  instance generation, construction of nominal and robust CFLP models, and LP
+  export.
+- `capacitated_facility_location/cfl_experiment.py`: execution of the
+  experimental campaign and Monte Carlo evaluation of static solutions.
+- `capacitated_facility_location/cfl_analysis.py`: validation, aggregation,
+  and visualization of the CFLP results.
 
 ## Requirements
 
-- Python 3
-- Gurobi Optimizer
-- A valid Gurobi license
-- pandas
-- matplotlib
+- Python 3.10 or later;
+- Gurobi Optimizer;
+- a valid Gurobi license.
 
-## Reproducibility
+The required Python packages are listed in `requirements.txt` and can be
+installed with:
 
-Each instance is identified by:
-- number of items `n`;
-- maximum relative deviation `delta`;
-- capacity ratio `capacity_ratio`;
-- pseudorandom seed.
-
-The uncertainty budget `gamma_rel` does not affect instance generation.
-The same instance can therefore be reused for different robustness levels.
+```bash
+python -m pip install -r requirements.txt
