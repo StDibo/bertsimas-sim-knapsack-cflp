@@ -94,7 +94,7 @@ def generate_instance(
     position_bounds: tuple[float, float],
     deviation_rate_thousandths_bounds: tuple[int, int],
 ) -> CFLInstance:
-    """Generate a reproducible T4-type instance from explicit intervals."""
+    """Generate a reproducible instance from explicit intervals."""
 
     if facility_count <= 0:
         raise ValueError("facility_count must be greater than zero")
