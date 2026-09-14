@@ -19,20 +19,15 @@ and analysis of the resulting data.
 
 - `knapsack/knapsack_generator.py`: reproducible instance generation,
   construction of nominal and robust models, and LP export.
-- `knapsack/knapsack_experiment.py`: execution of the nominal and robust
-  experimental campaign.
-- `knapsack/knapsack_analysis.py`: validation, aggregation, and visualization
-  of the experimental results.
-
+- `knapsack/knapsack_experiment.py`: TODO
+- `knapsack/knapsack_analysis.py`: TODO
 ### Capacitated Facility Location
 
-- `capacitated_facility_location/cfl_generator.py`: reproducible T4-type
+- `capacitated_facility_location/cfl_generator.py`: reproducible
   instance generation, construction of nominal and robust CFLP models, and LP
   export.
-- `capacitated_facility_location/cfl_experiment.py`: execution of the
-  experimental campaign and Monte Carlo evaluation of static solutions.
-- `capacitated_facility_location/cfl_analysis.py`: validation, aggregation,
-  and visualization of the CFLP results.
+- `capacitated_facility_location/cfl_experiment.py`: TODO
+- `capacitated_facility_location/cfl_analysis.py`: TODO
 
 ## Requirements
 
