@@ -22,6 +22,8 @@ DELTAS = [0.10, 0.25, 0.50]
 CAPACITY_RATIOS = [0.20, 0.50, 0.80]
 GAMMA_RELS = [0.05, 0.10, 0.20, 0.40, 0.60, 0.80, 1.00]
 SEEDS = [1, 2, 3, 4, 5]
+NOMINAL_WEIGHT_BOUNDS = (20, 29)
+PROFIT_BOUNDS = (16, 77)
 
 TIME_LIMIT_SEC = 1800
 SOLVER_THREADS = 4
@@ -42,8 +44,6 @@ FIELDNAMES = [
     "selected_items",
     "best_bound",
     "mip_gap",
-    "num_variables",
-    "num_constraints",
 ]
 
 
@@ -106,8 +106,6 @@ def solve_model(
         "selected_items": ";".join(str(j) for j in selected),
         "best_bound": model.ObjBound,
         "mip_gap": model.MIPGap if has_solution else "",
-        "num_variables": model.NumVars,
-        "num_constraints": model.NumConstrs,
     }
 
 
@@ -117,6 +115,8 @@ def run_experiment(
     capacity_ratios: Iterable[float],
     gamma_rels: Iterable[float],
     seeds: Iterable[int],
+    nominal_weight_bounds: tuple[int, int],
+    profit_bounds: tuple[int, int],
     output_path: Path,
 ) -> None:
     """Generate each instance once, then solve its nominal and robust models."""
@@ -130,7 +130,9 @@ def run_experiment(
     print(
         "Grid: "
         f"n={ns}, delta={deltas}, capacity_ratio={capacity_ratios}, "
-        f"gamma_rel={gamma_rels}, seed={seeds}"
+        f"gamma_rel={gamma_rels}, seed={seeds}, "
+        f"nominal_weight_bounds={nominal_weight_bounds}, "
+        f"profit_bounds={profit_bounds}"
     )
     print(f"Distinct instances: {instance_count}; total models: {model_count}")
     print("The complete experiment may take a long time.")
@@ -142,7 +144,14 @@ def run_experiment(
         for n, delta, capacity_ratio, seed in product(
             ns, deltas, capacity_ratios, seeds
         ):
-            instance = generate_instance(n, delta, capacity_ratio, seed)
+            instance = generate_instance(
+                n,
+                delta,
+                capacity_ratio,
+                seed,
+                nominal_weight_bounds=nominal_weight_bounds,
+                profit_bounds=profit_bounds,
+            )
             instance_id = make_instance_id(n, delta, capacity_ratio, seed)
 
             nominal = build_nominal_model(instance)
@@ -176,6 +185,8 @@ def main() -> None:
         CAPACITY_RATIOS,
         GAMMA_RELS,
         SEEDS,
+        NOMINAL_WEIGHT_BOUNDS,
+        PROFIT_BOUNDS,
         output,
     )
 

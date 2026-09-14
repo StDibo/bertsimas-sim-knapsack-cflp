@@ -20,12 +20,20 @@ class KnapsackInstance:
     seed: int
     delta: float
     capacity_ratio: float
+    nominal_weight_bounds: tuple[int, int]
+    profit_bounds: tuple[int, int]
 
 
 def generate_instance(
-    n: int, delta: float, capacity_ratio: float, seed: int
+    n: int,
+    delta: float,
+    capacity_ratio: float,
+    seed: int,
+    *,
+    nominal_weight_bounds: tuple[int, int],
+    profit_bounds: tuple[int, int],
 ) -> KnapsackInstance:
-    """Generate a reproducible instance independently of the Gamma budget."""
+    """Generate a reproducible instance from explicit sampling intervals."""
     
     if n <= 0:
         raise ValueError("n must be greater than zero")
@@ -33,10 +41,21 @@ def generate_instance(
         raise ValueError("delta must be non-negative")
     if not 0 < capacity_ratio <= 1:
         raise ValueError("capacity_ratio must be in the interval (0, 1]")
+    if len(nominal_weight_bounds) != 2:
+        raise ValueError("nominal_weight_bounds must contain two values")
+    if len(profit_bounds) != 2:
+        raise ValueError("profit_bounds must contain two values")
+
+    weight_min, weight_max = nominal_weight_bounds
+    profit_min, profit_max = profit_bounds
+    if weight_min <= 0 or weight_min > weight_max:
+        raise ValueError("nominal_weight_bounds must be positive and ordered")
+    if profit_min <= 0 or profit_min > profit_max:
+        raise ValueError("profit_bounds must be positive and ordered")
 
     rng = random.Random(seed)
-    nominal_weights = tuple(rng.randint(20, 29) for _ in range(n)) # to modify later on
-    profits = tuple(rng.randint(16, 77) for _ in range(n))
+    nominal_weights = tuple(rng.randint(weight_min, weight_max) for _ in range(n))
+    profits = tuple(rng.randint(profit_min, profit_max) for _ in range(n))
     maximum_deviations = tuple(
         round(weight * delta, 2) for weight in nominal_weights
     )
@@ -51,6 +70,8 @@ def generate_instance(
         seed=seed,
         delta=delta,
         capacity_ratio=capacity_ratio,
+        nominal_weight_bounds=nominal_weight_bounds,
+        profit_bounds=profit_bounds,
     )
 
 
