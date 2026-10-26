@@ -76,7 +76,7 @@ def generate_instance(
 
 
 def build_nominal_model(instance: KnapsackInstance) -> gp.Model:
-    """Build the nominal model without robust auxiliary variables."""
+    """Build the knapsack nominal model"""
 
     model = gp.Model("knapsack_nominal")
     x = model.addVars(instance.n, vtype=GRB.BINARY, name="x")
@@ -98,7 +98,7 @@ def build_nominal_model(instance: KnapsackInstance) -> gp.Model:
 def build_robust_model(
     instance: KnapsackInstance, gamma_rel: float
 ) -> gp.Model:
-    """Build the Bertsimas-Sim robust counterpart."""
+    """Build the Bertsimas-Sim robust counterpart of the knapsack"""
 
     if not 0 <= gamma_rel <= 1:
         raise ValueError("gamma_rel must be in the interval [0, 1]")
@@ -134,7 +134,7 @@ def build_robust_model(
 
 
 def write_nominal_lp(instance: KnapsackInstance, output_path: str | Path) -> Path:
-    """Export one nominal model in LP format."""
+    """Export one nominal knapsack model in LP format."""
 
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -145,7 +145,7 @@ def write_nominal_lp(instance: KnapsackInstance, output_path: str | Path) -> Pat
 def write_robust_lp(
     instance: KnapsackInstance, gamma_rel: float, output_path: str | Path
 ) -> Path:
-    """Export one robust model in LP format."""
+    """Export one Bertsimas-Sim robust knapsack model in LP format."""
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     build_robust_model(instance, gamma_rel).write(str(path))

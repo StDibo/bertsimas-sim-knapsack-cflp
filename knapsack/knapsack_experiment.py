@@ -1,6 +1,5 @@
 """Reproducible execution of nominal and robust Knapsack experiments."""
 
-import argparse
 import csv
 from itertools import product
 from pathlib import Path
@@ -133,9 +132,9 @@ def run_experiment(
         f"gamma_rel={gamma_rels}, seed={seeds}, "
         f"nominal_weight_bounds={nominal_weight_bounds}, "
         f"profit_bounds={profit_bounds}"
+        f"distinct instances: {instance_count}; total models: {model_count}; "
+        f"time limit per model: {TIME_LIMIT_SEC} seconds"
     )
-    print(f"Distinct instances: {instance_count}; total models: {model_count}")
-    print("The complete experiment may take a long time.")
 
     with output_path.open("w", newline="", encoding="utf-8") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=FIELDNAMES)
@@ -170,15 +169,7 @@ def run_experiment(
     print(f"Results saved to {output_path}")
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, help="path of the new CSV file")
-    return parser.parse_args()
-
-
 def main() -> None:
-    args = parse_args()
-    output = args.output or Path(__file__).with_name("knapsack_results.csv")
     run_experiment(
         NS,
         DELTAS,
@@ -187,7 +178,7 @@ def main() -> None:
         SEEDS,
         NOMINAL_WEIGHT_BOUNDS,
         PROFIT_BOUNDS,
-        output,
+        Path(__file__).with_name("knapsack_results.csv"),
     )
 
 

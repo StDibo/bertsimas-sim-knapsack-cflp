@@ -1,7 +1,6 @@
-"""Reproducible instances and models for the robust single-source CFLP."""
+"""Instances and models for the capacitated facility location problem."""
 
 import math
-import random
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
@@ -21,18 +20,16 @@ class CFLInstance:
     capacities: tuple[float, ...]
     nominal_demands: tuple[float, ...]
     maximum_deviations: tuple[float, ...]
-    seed: int | None = None
 
 
-def create_instance(
+def generate_instance(
     opening_costs: Sequence[float],
     assignment_costs: Sequence[Sequence[float]],
     capacities: Sequence[float],
     nominal_demands: Sequence[float],
     maximum_deviations: Sequence[float],
-    seed: int | None = None,
 ) -> CFLInstance:
-    """Validate explicit data and create an immutable CFL instance."""
+    """Validate explicit data and generate an immutable CFL instance."""
 
     opening_costs_tuple = tuple(float(value) for value in opening_costs)
     capacities_tuple = tuple(float(value) for value in capacities)
@@ -60,16 +57,33 @@ def create_instance(
     if len(maximum_deviations_tuple) != customer_count:
         raise ValueError("maximum_deviations must contain one value per customer")
 
-    if any(value < 0 for value in opening_costs_tuple):
-        raise ValueError("opening costs must be non-negative")
-    if any(value <= 0 for value in capacities_tuple):
-        raise ValueError("facility capacities must be greater than zero")
-    if any(value <= 0 for value in nominal_demands_tuple):
-        raise ValueError("nominal customer demands must be greater than zero")
-    if any(value < 0 for value in maximum_deviations_tuple):
-        raise ValueError("maximum demand deviations must be non-negative")
-    if any(value < 0 for row in assignment_costs_tuple for value in row):
-        raise ValueError("assignment costs must be non-negative")
+    if any(
+        not math.isfinite(value) or value < 0
+        for value in opening_costs_tuple
+    ):
+        raise ValueError("opening costs must be finite and non-negative")
+    if any(
+        not math.isfinite(value) or value <= 0 for value in capacities_tuple
+    ):
+        raise ValueError("facility capacities must be finite and positive")
+    if any(
+        not math.isfinite(value) or value <= 0
+        for value in nominal_demands_tuple
+    ):
+        raise ValueError("nominal customer demands must be finite and positive")
+    if any(
+        not math.isfinite(value) or value < 0
+        for value in maximum_deviations_tuple
+    ):
+        raise ValueError(
+            "maximum demand deviations must be finite and non-negative"
+        )
+    if any(
+        not math.isfinite(value) or value < 0
+        for row in assignment_costs_tuple
+        for value in row
+    ):
+        raise ValueError("assignment costs must be finite and non-negative")
 
     return CFLInstance(
         facility_count=facility_count,
@@ -79,143 +93,140 @@ def create_instance(
         capacities=capacities_tuple,
         nominal_demands=nominal_demands_tuple,
         maximum_deviations=maximum_deviations_tuple,
-        seed=seed,
     )
 
 
-def generate_instance(
-    facility_count: int,
-    customer_count: int,
-    seed: int,
+def load_orlib_instance(
+    file_path: str | Path,
     *,
-    nominal_demand_bounds: tuple[int, int],
-    capacity_bounds: tuple[int, int],
-    opening_cost_bounds: tuple[int, int],
-    position_bounds: tuple[float, float],
-    deviation_rate_thousandths_bounds: tuple[int, int],
+    deviation_rates: float | Sequence[float],
+    facility_capacity: float | None = None,
 ) -> CFLInstance:
-    """Generate a reproducible instance from explicit intervals."""
+    """Load OR-Library data and define maximum demand deviations.
 
-    if facility_count <= 0:
-        raise ValueError("facility_count must be greater than zero")
-    if customer_count <= 0:
-        raise ValueError("customer_count must be greater than zero")
+    OR-Library files contain nominal demands only. Use a rate of zero to keep
+    those demands nominal, one non-negative rate for a common relative
+    deviation, or one rate per customer for heterogeneous deviations. Sets
+    A--C contain a capacity placeholder, which is replaced by the supplied
+    facility_capacity.
+    """
 
-    integer_intervals = {
-        "nominal_demand_bounds": nominal_demand_bounds,
-        "capacity_bounds": capacity_bounds,
-        "opening_cost_bounds": opening_cost_bounds,
-        "deviation_rate_thousandths_bounds": deviation_rate_thousandths_bounds,
-    }
-    for name, bounds in integer_intervals.items():
-        if len(bounds) != 2:
-            raise ValueError(f"{name} must contain two values")
-        lower, upper = bounds
-        if lower < 0 or lower > upper:
-            raise ValueError(f"{name} must be non-negative and ordered")
+    path = Path(file_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"OR-Library instance not found: {path}")
 
-    demand_min, demand_max = nominal_demand_bounds
-    capacity_min, capacity_max = capacity_bounds
-    opening_cost_min, opening_cost_max = opening_cost_bounds
-    deviation_rate_min, deviation_rate_max = deviation_rate_thousandths_bounds
-    if demand_min == 0:
-        raise ValueError("nominal_demand_bounds must be strictly positive")
-    if capacity_min == 0:
-        raise ValueError("capacity_bounds must be strictly positive")
-    if len(position_bounds) != 2:
-        raise ValueError("position_bounds must contain two values")
-    position_min, position_max = position_bounds
-    if position_min >= position_max:
-        raise ValueError("position_bounds must be ordered and non-degenerate")
-
-    rng = random.Random(seed)
-    nominal_demands = tuple(
-        float(rng.randint(demand_min, demand_max)) for _ in range(customer_count)
-    )
-    capacities = tuple(
-        float(rng.randint(capacity_min, capacity_max))
-        for _ in range(facility_count)
-    )
-    opening_costs = tuple(
-        float(rng.randint(opening_cost_min, opening_cost_max))
-        for _ in range(facility_count)
-    )
-    facility_positions = tuple(
-        (
-            rng.uniform(position_min, position_max),
-            rng.uniform(position_min, position_max),
-        )
-        for _ in range(facility_count)
-    )
-    customer_positions = tuple(
-        (
-            rng.uniform(position_min, position_max),
-            rng.uniform(position_min, position_max),
-        )
-        for _ in range(customer_count)
-    )
-    assignment_costs = tuple(
-        tuple(
-            float(
-                math.floor(
-                    math.dist(facility_positions[i], customer_positions[j])
-                )
+    tokens = path.read_text(encoding="utf-8").split()
+    if "capacity" in tokens:
+        if facility_capacity is None:
+            raise ValueError(
+                "facility_capacity is required for OR-Library sets A, B, and C"
             )
-            for j in range(customer_count)
-        )
-        for i in range(facility_count)
+        tokens = [
+            str(facility_capacity) if token == "capacity" else token
+            for token in tokens
+        ]
+    try:
+        values = [float(token) for token in tokens]
+    except ValueError as error:
+        raise ValueError(
+            "the loader accepts fully numeric OR-Library files only"
+        ) from error
+
+    if len(values) < 2:
+        raise ValueError("the OR-Library file is missing its dimensions")
+    if not values[0].is_integer() or not values[1].is_integer():
+        raise ValueError("facility and customer counts must be integers")
+
+    facility_count = int(values[0])
+    customer_count = int(values[1])
+    if facility_count <= 0 or customer_count <= 0:
+        raise ValueError("facility and customer counts must be positive")
+
+    expected_values = 2 + 2 * facility_count + customer_count * (
+        1 + facility_count
     )
+    if len(values) != expected_values:
+        raise ValueError(
+            f"expected {expected_values} numeric values, found {len(values)}"
+        )
+
+    cursor = 2
+    capacities: list[float] = []
+    opening_costs: list[float] = []
+    for _ in range(facility_count):
+        capacities.append(values[cursor])
+        opening_costs.append(values[cursor + 1])
+        cursor += 2
+
+    nominal_demands: list[float] = []
+    assignment_costs: list[list[float]] = [
+        [] for _ in range(facility_count)
+    ]
+    for _ in range(customer_count):
+        nominal_demands.append(values[cursor])
+        cursor += 1
+        for i in range(facility_count):
+            assignment_costs[i].append(values[cursor])
+            cursor += 1
+
+    if isinstance(deviation_rates, (int, float)):
+        rates = (float(deviation_rates),) * customer_count
+    else:
+        rates = tuple(float(value) for value in deviation_rates)
+    if len(rates) != customer_count:
+        raise ValueError("deviation_rates must contain one value per customer")
+    if any(not math.isfinite(rate) or rate < 0 for rate in rates):
+        raise ValueError("demand deviation rates must be finite and non-negative")
+
     maximum_deviations = tuple(
-        float(
-            math.floor(
-                demand
-                * rng.randint(deviation_rate_min, deviation_rate_max)
-                / 1000.0
-            )
-        )
-        for demand in nominal_demands
+        nominal_demands[j] * rates[j] for j in range(customer_count)
     )
-
-    return create_instance(
+    return generate_instance(
         opening_costs=opening_costs,
         assignment_costs=assignment_costs,
         capacities=capacities,
         nominal_demands=nominal_demands,
         maximum_deviations=maximum_deviations,
-        seed=seed,
     )
 
 
-def _absolute_budgets_by_facility(
-    gammas: float | Sequence[float],
-    facility_count: int,
-    customer_count: int,
-) -> tuple[float, ...]:
-    """Return one validated absolute uncertainty budget per facility."""
+def select_subinstance(
+    instance: CFLInstance,
+    facility_indices: Sequence[int],
+    customer_indices: Sequence[int],
+) -> CFLInstance:
+    """Return the CFL subinstance induced by selected facilities and customers."""
 
-    if isinstance(gammas, (int, float)):
-        budgets = (float(gammas),) * facility_count
-    else:
-        budgets = tuple(float(value) for value in gammas)
-
-    if len(budgets) != facility_count:
-        raise ValueError("gammas must contain one value per facility")
-    if any(not 0 <= value <= customer_count for value in budgets):
-        raise ValueError(
-            "each absolute budget must be between zero and the customer count"
-        )
-    return budgets
+    facilities = tuple(facility_indices)
+    customers = tuple(customer_indices)
+    return generate_instance(
+        opening_costs=[instance.opening_costs[i] for i in facilities],
+        assignment_costs=[
+            [instance.assignment_costs[i][j] for j in customers]
+            for i in facilities
+        ],
+        capacities=[instance.capacities[i] for i in facilities],
+        nominal_demands=[instance.nominal_demands[j] for j in customers],
+        maximum_deviations=[instance.maximum_deviations[j] for j in customers],
+    )
 
 
 def build_nominal_model(instance: CFLInstance) -> gp.Model:
-    """Build the nominal static single-source CFL model."""
+    """Build the nominal multi-source capacitated facility location model."""
 
     facilities = range(instance.facility_count)
     customers = range(instance.customer_count)
 
     model = gp.Model("cfl_nominal")
     y = model.addVars(facilities, vtype=GRB.BINARY, name="y")
-    x = model.addVars(facilities, customers, vtype=GRB.BINARY, name="x")
+    x = model.addVars(
+        facilities,
+        customers,
+        lb=0.0,
+        ub=1.0,
+        vtype=GRB.CONTINUOUS,
+        name="x",
+    )
 
     model.setObjective(
         gp.quicksum(
@@ -255,26 +266,29 @@ def build_nominal_model(instance: CFLInstance) -> gp.Model:
 
 def build_robust_model(
     instance: CFLInstance,
-    gammas: float | Sequence[float],
+    gamma: float,
 ) -> gp.Model:
-    """Build the compact robust CFL counterpart for uncertain demand.
+    """Build the Bertsimas-Sim robust CFL counterpart.
 
-    ``gammas[i]`` is the absolute budget associated with the capacity
-    constraint of facility ``i``. Passing one scalar is a convenience for
-    assigning the same absolute budget to every facility.
+    One global budget controls demand uncertainty in every capacity constraint.
     """
 
     facilities = range(instance.facility_count)
     customers = range(instance.customer_count)
-    absolute_budgets = _absolute_budgets_by_facility(
-        gammas,
-        instance.facility_count,
-        instance.customer_count,
-    )
+    absolute_gamma = float(gamma)
+    if not 0 <= absolute_gamma <= instance.customer_count:
+        raise ValueError("gamma must be between zero and the customer count")
 
     model = gp.Model("cfl_robust")
     y = model.addVars(facilities, vtype=GRB.BINARY, name="y")
-    x = model.addVars(facilities, customers, vtype=GRB.BINARY, name="x")
+    x = model.addVars(
+        facilities,
+        customers,
+        lb=0.0,
+        ub=1.0,
+        vtype=GRB.CONTINUOUS,
+        name="x",
+    )
     theta = model.addVars(
         facilities, lb=0.0, vtype=GRB.CONTINUOUS, name="theta"
     )
@@ -313,7 +327,7 @@ def build_robust_model(
             gp.quicksum(
                 instance.nominal_demands[j] * x[i, j] for j in customers
             )
-            + absolute_budgets[i] * theta[i]
+            + absolute_gamma * theta[i]
             + gp.quicksum(q[i, j] for j in customers)
             <= instance.capacities[i] * y[i]
             for i in facilities
@@ -346,14 +360,14 @@ def write_nominal_lp(instance: CFLInstance, output_path: str | Path) -> Path:
 
 def write_robust_lp(
     instance: CFLInstance,
-    gammas: float | Sequence[float],
+    gamma: float,
     output_path: str | Path,
 ) -> Path:
-    """Export one robust CFL model in LP format."""
+    """Export one Bertsimas-Sim robust CFL model in LP format."""
 
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    model = build_robust_model(instance, gammas)
+    model = build_robust_model(instance, gamma)
     model.write(str(path))
     model.dispose()
     return path
