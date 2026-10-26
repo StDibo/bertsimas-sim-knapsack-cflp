@@ -17,17 +17,15 @@ and analysis of the resulting data.
 
 ### Knapsack
 
-- `knapsack/knapsack_generator.py`: reproducible instance generation,
-  construction of nominal and robust models, and LP export.
-- `knapsack/knapsack_experiment.py`: TODO
-- `knapsack/knapsack_analysis.py`: TODO
+- `knapsack/knapsack_generator.py`: reproducible instance generation, construction of nominal and Bertsimas–Sim robust models, and LP export.
+- `knapsack/knapsack_experiment.py`: execution of the nominal and robust experimental grid and collection of solver results in CSV format.
+- `knapsack/knapsack_analysis.py`: computation of the Price of Robustness, solution-similarity metrics, runtimes, time-limit statistics, and plots.
+
 ### Capacitated Facility Location
 
-- `capacitated_facility_location/cfl_generator.py`: reproducible
-  instance generation, construction of nominal and robust CFLP models, and LP
-  export.
-- `capacitated_facility_location/cfl_experiment.py`: TODO
-- `capacitated_facility_location/cfl_analysis.py`: TODO
+- `capacitated_facility_location/cfl_generator.py`: validation of explicit CFLP instances, loading of OR-Library benchmarks, extraction of subinstances, construction of nominal and Bertsimas–Sim robust models, and LP export.
+- `capacitated_facility_location/cfl_experiment.py`: validation against published OR-Library optima and execution of the benchmark and scalability campaigns.
+- `capacitated_facility_location/cfl_analysis.py`: analysis of the Price of Robustness, facility-opening decisions, capacity and opening-cost effects, runtimes, time limits, and scalability results.
 
 ## Requirements
 
