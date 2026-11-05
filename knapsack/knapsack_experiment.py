@@ -131,7 +131,7 @@ def run_experiment(
         f"n={ns}, delta={deltas}, capacity_ratio={capacity_ratios}, "
         f"gamma_rel={gamma_rels}, seed={seeds}, "
         f"nominal_weight_bounds={nominal_weight_bounds}, "
-        f"profit_bounds={profit_bounds}"
+        f"profit_bounds={profit_bounds}; "
         f"distinct instances: {instance_count}; total models: {model_count}; "
         f"time limit per model: {TIME_LIMIT_SEC} seconds"
     )

@@ -138,7 +138,9 @@ def write_nominal_lp(instance: KnapsackInstance, output_path: str | Path) -> Pat
 
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    build_nominal_model(instance).write(str(path))
+    model = build_nominal_model(instance)
+    model.write(str(path))
+    model.dispose()
     return path
 
 
@@ -148,5 +150,7 @@ def write_robust_lp(
     """Export one Bertsimas-Sim robust knapsack model in LP format."""
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    build_robust_model(instance, gamma_rel).write(str(path))
+    model = build_robust_model(instance, gamma_rel)
+    model.write(str(path))
+    model.dispose()
     return path

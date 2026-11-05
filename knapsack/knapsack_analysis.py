@@ -53,6 +53,7 @@ def calculate_comparison_metrics(results: pd.DataFrame) -> pd.DataFrame:
                 "hamming_pct": 100
                 * len(nominal_items ^ robust_items)
                 / row["n"],
+                "selected_fraction": len(robust_items) / row["n"],
                 "jaccard_similarity": (
                     len(nominal_items & robust_items) / len(union)
                     if union
@@ -85,6 +86,24 @@ def summarize_budget(comparisons: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([nominal_baseline, summary], ignore_index=True).sort_values(
         "gamma_rel"
     )
+
+
+def summarize_capacity_saturation(comparisons: pd.DataFrame) -> pd.DataFrame:
+    """Measure when each capacity-ratio group reaches full protection."""
+
+    data = comparisons.copy()
+    data["exceeds_budget"] = data["selected_fraction"] > data["gamma_rel"]
+    summary = data.groupby(
+        ["capacity_ratio", "gamma_rel"], as_index=False
+    ).agg(
+        included_solutions=("instance_id", "size"),
+        max_selected_fraction=("selected_fraction", "max"),
+        solutions_exceeding_budget=("exceeds_budget", "sum"),
+    )
+    summary["all_solutions_saturated"] = (
+        summary["solutions_exceeding_budget"] == 0
+    )
+    return summary
 
 
 def summarize_sample(
@@ -265,6 +284,9 @@ def main() -> None:
     budget_summary = summarize_budget(comparisons)
 
     budget_summary.to_csv(output_directory / "budget_summary.csv", index=False)
+    summarize_capacity_saturation(comparisons).to_csv(
+        output_directory / "capacity_saturation.csv", index=False
+    )
     summarize_sample(results, comparisons).to_csv(
         output_directory / "sample_composition.csv", index=False
     )
